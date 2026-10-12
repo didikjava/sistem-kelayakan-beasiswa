@@ -618,6 +618,76 @@ render_html(
     """
 )
 
+if st.session_state.get("dark_mode", False):
+    render_html(
+        """
+        <style>
+        .stApp,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"] {
+            background: #101820 !important;
+            color: #e6edf3 !important;
+        }
+
+        [data-testid="stHeader"] {
+            background: rgba(16, 24, 32, 0.92) !important;
+        }
+
+        .page-kicker { background: #203443; color: #c3d9e8 !important; }
+        .page-title,
+        .section-title,
+        .flow-heading,
+        .info-value,
+        .input-title,
+        .flow-title { color: #e6edf3 !important; }
+        .page-description,
+        .section-description,
+        .info-text,
+        .input-description,
+        .flow-description,
+        .flow-text { color: #b1c0cc !important; }
+
+        .info-card,
+        .input-card,
+        .flow-card,
+        div[data-testid="stMetric"] {
+            background: #1b2732 !important;
+            border-color: #334452 !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16) !important;
+        }
+
+        .info-label,
+        .input-description,
+        .flow-description,
+        .flow-text,
+        div[data-testid="stMetricLabel"] { color: #a6b6c3 !important; }
+        .input-icon,
+        .flow-note { background: #263744 !important; color: #c3d9e8 !important; }
+        .flow-line-inner { background: #536979; }
+        .flow-line-inner:after { border-color: #8da5ba; }
+
+        .stApp [data-baseweb="input"] input,
+        .stApp [data-baseweb="textarea"] textarea,
+        .stApp [data-baseweb="select"] > div,
+        .stApp [data-testid="stNumberInput"] input {
+            background: #1b2732 !important;
+            color: #e6edf3 !important;
+            border-color: #465968 !important;
+        }
+
+        .stApp [data-testid="stWidgetLabel"],
+        .stApp [data-testid="stMarkdownContainer"] p,
+        .stApp [data-testid="stCaptionContainer"] {
+            color: #c5d0d9;
+        }
+
+        [data-testid="stDataFrame"],
+        [data-testid="stTable"] { background: #1b2732; }
+        .footer { border-color: #334452; color: #a6b6c3 !important; }
+        </style>
+        """
+    )
+
 
 # ============================================================
 # SIDEBAR
@@ -666,6 +736,8 @@ with st.sidebar:
         ],
         label_visibility="collapsed",
     )
+
+    st.toggle("Mode gelap", key="dark_mode", help="Aktifkan tampilan gelap")
 
     render_html(
         """
