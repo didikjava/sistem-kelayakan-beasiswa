@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from fuzzy_logic import (
     hitung_beasiswa,
+    hitung_beasiswa_batch,
     hitung_membership,
     hitung_firing_strength,
     ipk,
@@ -443,10 +444,6 @@ render_html(
        RESULT CARD
     ======================================================== */
 
-    /* ========================================================
-       PREMIUM SYSTEM FLOW
-       ======================================================== */
-
     .flow-section { margin-top: 38px; margin-bottom: 18px; }
     .flow-heading { font-size: 21px; font-weight: 850; color: #0b2845 !important; margin-bottom: 5px; }
     .flow-description { font-size: 13px; color: #78899a !important; line-height: 1.6; }
@@ -662,6 +659,7 @@ with st.sidebar:
         [
             "🏠 Dashboard",
             "🧮 Penilaian Beasiswa",
+            "📁 Pemrosesan Batch",
             "📋 Rule Fuzzy",
             "📈 Membership Function",
             "ℹ️ Tentang Sistem",
@@ -1304,6 +1302,207 @@ elif menu == "🧮 Penilaian Beasiswa":
             st.warning(
                 "Tidak ada rule fuzzy yang aktif."
             )
+
+
+# ============================================================
+# PEMROSESAN BATCH DATASET
+# ============================================================
+
+elif menu == "📁 Pemrosesan Batch":
+
+    render_html(
+        """
+        <div class="page-kicker">
+            BATCH PROCESSING SYSTEM
+        </div>
+
+        <div class="page-title">
+            Pemrosesan Data Massal
+        </div>
+
+        <div class="page-description">
+            Unggah berkas CSV atau Excel berisi daftar data mahasiswa untuk
+            menghitung nilai kelayakan beasiswa secara otomatis sekaligus.
+        </div>
+        """
+    )
+
+    render_html(
+        """
+        <div class="hero-card">
+
+            <div class="hero-label">
+                AUTOMATED BATCH EVALUATION
+            </div>
+
+            <div class="hero-title">
+                Evaluasi Banyak Mahasiswa Sekaligus
+            </div>
+
+            <div class="hero-text">
+                Fitur ini memproses seluruh baris data mahasiswa pada berkas CSV/Excel Anda
+                melalui mesin inferensi Fuzzy Logic dan memberikan ringkasan hasil serta grafik distribusi.
+            </div>
+
+        </div>
+        """
+    )
+
+    col_down, col_up = st.columns([1, 2], gap="large")
+
+    with col_down:
+        render_html(
+            """
+            <div class="input-card">
+                <div class="input-icon">📄</div>
+                <div class="input-title">Templat Data</div>
+                <div class="input-description">
+                    Unduh contoh format berkas CSV sebagai panduan struktur kolom.
+                </div>
+            </div>
+            """
+        )
+        
+        sample_df = pd.DataFrame([
+            {"Nama": "Budi Santoso", "IPK": 3.75, "Penghasilan": 2500000, "Prestasi": 85},
+            {"Nama": "Siti Rahma", "IPK": 2.80, "Penghasilan": 5000000, "Prestasi": 40},
+            {"Nama": "Andi Wijaya", "IPK": 3.20, "Penghasilan": 1500000, "Prestasi": 60},
+            {"Nama": "Dewi Lestari", "IPK": 3.90, "Penghasilan": 8000000, "Prestasi": 95},
+            {"Nama": "Eko Prasetyo", "IPK": 2.10, "Penghasilan": 3000000, "Prestasi": 20},
+        ])
+        
+        csv_sample = sample_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Unduh Templat CSV",
+            data=csv_sample,
+            file_name="templat_data_mahasiswa.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+    with col_up:
+        uploaded_file = st.file_uploader(
+            "Unggah Berkas CSV atau Excel",
+            type=["csv", "xlsx"],
+            help="Pastikan berkas memiliki kolom IPK, Penghasilan, dan Prestasi"
+        )
+
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.name.endswith('.csv'):
+                df_input = pd.read_csv(uploaded_file)
+            else:
+                df_input = pd.read_excel(uploaded_file)
+
+            st.success(f"Berkas '{uploaded_file.name}' berhasil diunggah ({len(df_input)} baris data).")
+
+            render_html(
+                """
+                <div class="section-header">
+                    <div class="section-title">Pemetaan Kolom Data</div>
+                    <div class="section-description">
+                        Pilih kolom yang sesuai pada berkas Anda untuk masing-masing parameter fuzzy.
+                    </div>
+                </div>
+                """
+            )
+
+            cols = list(df_input.columns)
+            
+            def get_default_idx(columns_list, search_key):
+                for idx, c in enumerate(columns_list):
+                    if search_key.lower() in str(c).lower():
+                        return idx
+                return 0
+
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                col_ipk = st.selectbox("Kolom IPK", cols, index=get_default_idx(cols, "ipk"))
+            with c2:
+                col_penghasilan = st.selectbox("Kolom Penghasilan", cols, index=get_default_idx(cols, "penghasilan"))
+            with c3:
+                col_prestasi = st.selectbox("Kolom Prestasi", cols, index=get_default_idx(cols, "prestasi"))
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            if st.button("🚀  Proses Semua Data Massal", use_container_width=True):
+                with st.spinner("Sedang memproses evaluasi fuzzy secara massal..."):
+                    df_hasil = hitung_beasiswa_batch(df_input, col_ipk, col_penghasilan, col_prestasi)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Ringkasan Statistik
+                total_data = len(df_hasil)
+                layak_cnt = len(df_hasil[df_hasil["Kategori Kelayakan"] == "Layak"])
+                dipertimbangkan_cnt = len(df_hasil[df_hasil["Kategori Kelayakan"] == "Dipertimbangkan"])
+                tidak_layak_cnt = len(df_hasil[df_hasil["Kategori Kelayakan"] == "Tidak Layak"])
+
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    st.metric("Total Mahasiswa", f"{total_data} orang")
+                with m2:
+                    st.metric("Layak (>=70)", f"{layak_cnt} orang")
+                with m3:
+                    st.metric("Dipertimbangkan (40-69)", f"{dipertimbangkan_cnt} orang")
+                with m4:
+                    st.metric("Tidak Layak (<40)", f"{tidak_layak_cnt} orang")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                col_chart, col_table_view = st.columns([1, 2], gap="large")
+
+                # Visualisasi Pie Chart
+                with col_chart:
+                    render_html(
+                        """
+                        <div class="section-header">
+                            <div class="section-title">Distribusi Kategori</div>
+                        </div>
+                        """
+                    )
+                    categories = ['Layak', 'Dipertimbangkan', 'Tidak Layak']
+                    counts = [layak_cnt, dipertimbangkan_cnt, tidak_layak_cnt]
+                    colors = ['#103f68', '#f57c00', '#c62828']
+
+                    fig, ax = plt.subplots(figsize=(5, 4))
+                    ax.pie(counts, labels=categories, autopct='%1.1f%%', startangle=90, colors=colors)
+                    ax.axis('equal')
+                    st.pyplot(fig)
+                    plt.close(fig)
+
+                # Tabel Hasil Evaluasi
+                with col_table_view:
+                    render_html(
+                        """
+                        <div class="section-header">
+                            <div class="section-title">Hasil Evaluasi Batch</div>
+                        </div>
+                        """
+                    )
+                    
+                    filter_kategori = st.multiselect(
+                        "Filter Kategori Output:",
+                        ["Layak", "Dipertimbangkan", "Tidak Layak"],
+                        default=["Layak", "Dipertimbangkan", "Tidak Layak"]
+                    )
+                    
+                    df_show = df_hasil[df_hasil["Kategori Kelayakan"].isin(filter_kategori)]
+                    st.dataframe(df_show, use_container_width=True, hide_index=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # Unduh Hasil CSV
+                csv_hasil = df_hasil.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Unduh Hasil Penilaian (CSV)",
+                    data=csv_hasil,
+                    file_name="hasil_penilaian_beasiswa_batch.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+        except Exception as e:
+            st.error(f"Gagal membaca atau memproses berkas: {e}")
 
 
 # ============================================================

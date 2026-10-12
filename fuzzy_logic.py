@@ -444,3 +444,40 @@ def hitung_firing_strength(membership):
         })
 
     return hasil
+
+
+# ============================================================
+# 9. FUNGSI PEMROSESAN BATCH DATASET
+# ============================================================
+
+def hitung_beasiswa_batch(df, col_ipk="IPK", col_penghasilan="Penghasilan", col_prestasi="Prestasi"):
+    """
+    Memproses DataFrame berisi data mahasiswa secara batch.
+    Mendukung deteksi otomatis nominal penghasilan (Rupiah utuh vs Juta Rupiah).
+    """
+    skor_list = []
+    kategori_list = []
+    
+    for _, row in df.iterrows():
+        try:
+            val_ipk = float(row[col_ipk])
+            val_penghasilan = float(row[col_penghasilan])
+            val_prestasi = float(row[col_prestasi])
+            
+            # Deteksi otomatis: Jika input > 100, asumsikan nominal Rupiah utuh
+            if val_penghasilan > 100:
+                val_penghasilan_juta = val_penghasilan / 1_000_000
+            else:
+                val_penghasilan_juta = val_penghasilan
+                
+            skor, kat = hitung_beasiswa(val_ipk, val_penghasilan_juta, val_prestasi)
+            skor_list.append(round(skor, 2))
+            kategori_list.append(kat)
+        except Exception:
+            skor_list.append(0.0)
+            kategori_list.append("Error Input")
+            
+    res_df = df.copy()
+    res_df["Skor Kelayakan"] = skor_list
+    res_df["Kategori Kelayakan"] = kategori_list
+    return res_df
